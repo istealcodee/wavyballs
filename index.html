@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>wavyballs</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let circles = [];
+        let mouseTrail = [];
+        const trailLength = 10;
+        let time = 0;
+
+        function resizeCanvas() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            initCircles();
+        }
+
+        function initCircles() {
+            circles = [];
+            const centerX = width;
+            const centerY = 0;
+            const maxRadius = Math.sqrt(width * width + height * height);
+            const gridSize = 20;
+
+            for (let radius = 0; radius < maxRadius; radius += gridSize) {
+                let angleStep = gridSize / radius;
+                for (let angle = 0; angle < Math.PI / 2; angle += angleStep) {
+                    let x = width - radius * Math.cos(angle);
+                    let y = radius * Math.sin(angle);
+                    let size = Math.max(2, 10 * (radius / maxRadius));
+                    circles.push({ x, y, size });
+                }
+            }
+        }
+
+        function drawCircles() {
+            ctx.fillStyle = '#00008B';
+            ctx.fillRect(0, 0, width, height);
+
+            circles.forEach(circle => {
+                let maxOpacity = 0;
+                mouseTrail.forEach((pos, index) => {
+                    let distance = Math.sqrt((circle.x - pos.x) ** 2 + (circle.y - pos.y) ** 2);
+                    let trailFactor = (trailLength - index) / trailLength;
+                    let opacity = Math.max(0, 1 - distance / (150 * trailFactor));
+                    maxOpacity = Math.max(maxOpacity, opacity);
+                });
+
+                let waveOpacity = Math.sin(time / 100 + (circle.y - circle.x) / 200) * 0.4 + 0.6;
+                let opacity = Math.max(waveOpacity, maxOpacity);
+
+                ctx.fillStyle = `rgba(0, 51, 153, ${opacity})`;
+                ctx.beginPath();
+                ctx.arc(circle.x, circle.y, circle.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function animate() {
+            time++;
+            drawCircles();
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        canvas.addEventListener('mousemove', (e) => {
+            mouseTrail.unshift({ x: e.clientX, y: e.clientY });
+            if (mouseTrail.length > trailLength) {
+                mouseTrail.pop();
+            }
+        });
+
+        resizeCanvas();
+        animate();
+    </script>
+</body>
+</html>
